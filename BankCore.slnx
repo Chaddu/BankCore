@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="BankCore.API/BankCore.API.csproj" />
+  <Project Path="BankCore.Application/BankCore.Application.csproj" />
+  <Project Path="BankCore.Domain/BankCore.Domain.csproj" />
+  <Project Path="BankCore.Infrastructure/BankCore.Infrastructure.csproj" />
+</Solution>

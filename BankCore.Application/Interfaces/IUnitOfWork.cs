@@ -12,6 +12,7 @@ public interface IUnitOfWork
     ITransferRepository Transfers { get; }
 
     IIdempotencyRepository IdempotencyRecords { get; }
+    IUserRepository Users { get; }
 
     Task<int> SaveChangesAsync();
 

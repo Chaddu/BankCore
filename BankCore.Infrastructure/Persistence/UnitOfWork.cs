@@ -23,6 +23,8 @@ public class UnitOfWork(AppDbContext context) : IUnitOfWork
 
     public IIdempotencyRepository IdempotencyRecords { get; } =
         new IdempotencyRepository(context);
+    public IUserRepository Users { get; } = new UserRepository(context);
+
 
     public async Task<int> SaveChangesAsync()
     {

@@ -33,5 +33,11 @@ public class CustomerConfiguration : IEntityTypeConfiguration<Customer>
 
         builder.Property(c => c.UpdatedAt)
             .IsRequired(false);
+
+        builder.Property(c => c.UserId)
+    .IsRequired();
+
+        builder.HasIndex(c => c.UserId)
+            .IsUnique();
     }
 }

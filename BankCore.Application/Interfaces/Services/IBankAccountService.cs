@@ -7,9 +7,9 @@ public interface IBankAccountService
 {
     Task<Result<AccountResponse>> CreateAsync(CreateAccountRequest request);
 
-    Task<Result<AccountResponse?>> GetByIdAsync(int id);
+    Task<Result<AccountResponse>> GetByIdAsync(int id);
 
-    Task<Result<AccountResponse?>> GetByAccountNumberAsync(string accountNumber);
+    Task<Result<AccountResponse>> GetByAccountNumberAsync(string accountNumber);
 
     Task<Result<List<AccountResponse>>> GetByOwnerIdAsync(int ownerId);
 }

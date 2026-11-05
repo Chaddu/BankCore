@@ -7,5 +7,5 @@ public interface ITransferService
 {
     Task<Result<TransferResponse>> CreateAsync(CreateTransferRequest request,string idempotencyKey);
 
-    Task<Result<TransferResponse?>> GetByIdAsync(int id);
+    Task<Result<TransferResponse>> GetByIdAsync(int id);
 }

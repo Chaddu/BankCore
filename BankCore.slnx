@@ -3,4 +3,5 @@
   <Project Path="BankCore.Application/BankCore.Application.csproj" />
   <Project Path="BankCore.Domain/BankCore.Domain.csproj" />
   <Project Path="BankCore.Infrastructure/BankCore.Infrastructure.csproj" />
+  <Project Path="BankCore.Tests/BankCore.Tests.csproj" />
 </Solution>

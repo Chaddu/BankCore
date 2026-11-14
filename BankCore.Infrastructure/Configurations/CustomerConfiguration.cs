@@ -18,13 +18,6 @@ public class CustomerConfiguration : IEntityTypeConfiguration<Customer>
             .IsRequired()
             .HasMaxLength(100);
 
-        builder.Property(c => c.Email)
-            .IsRequired()
-            .HasMaxLength(256);
-
-        builder.HasIndex(c => c.Email)
-            .IsUnique();
-
         builder.Property(c => c.DateOfBirth)
             .IsRequired();
 

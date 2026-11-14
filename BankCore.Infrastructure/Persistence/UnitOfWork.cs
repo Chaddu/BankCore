@@ -25,7 +25,11 @@ public class UnitOfWork(AppDbContext context) : IUnitOfWork
         new IdempotencyRepository(context);
     public IUserRepository Users { get; } = new UserRepository(context);
 
+    public INotificationRepository Notifications { get; } =
+        new NotificationRepository(context);
 
+    public IOutboxRepository OutboxMessages { get; } =
+        new OutboxRepository(context);
     public async Task<int> SaveChangesAsync()
     {
         return await context.SaveChangesAsync();

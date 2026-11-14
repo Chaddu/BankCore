@@ -1,7 +1,6 @@
-﻿namespace BankCore.Application.DTOs.Requests;
+﻿    namespace BankCore.Application.DTOs.Requests;
 
-public record CreateCustomerRequest(
-    string FirstName,
-    string LastName,
-    string Email,
-    DateTime DateOfBirth);
+    public record CreateCustomerRequest(
+        string FirstName,
+        string LastName,
+        DateTime DateOfBirth);

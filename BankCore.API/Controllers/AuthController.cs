@@ -6,7 +6,6 @@ using Microsoft.AspNetCore.Mvc;
 namespace BankCore.API.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
 public class AuthController(IAuthService authService) : BaseController
 {
     [HttpPost("register")]

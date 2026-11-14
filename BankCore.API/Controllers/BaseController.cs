@@ -5,6 +5,7 @@ using System.Security.Claims;
 namespace BankCore.API.Controllers;
 
 [ApiController]
+[Route("api/[controller]")]
 public class BaseController : ControllerBase
 {
     protected IActionResult HandleResult<T>(Result<T> result)

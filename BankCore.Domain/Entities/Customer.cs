@@ -8,8 +8,6 @@ public class Customer : BaseEntity
 
     public string LastName { get; private set; } = string.Empty;
 
-    public string Email { get; private set; } = string.Empty;
-
     public DateTime DateOfBirth { get; private set; }
     public int UserId { get; private set; }
     public User User { get; private set; } = null!;
@@ -22,7 +20,6 @@ public class Customer : BaseEntity
         int userId,
         string firstName,
         string lastName,
-        string email,
         DateTime dateOfBirth)
     {
 
@@ -34,23 +31,18 @@ public class Customer : BaseEntity
         if (string.IsNullOrWhiteSpace(lastName))
             throw new DomainException("Last name is required.");
 
-        if (string.IsNullOrWhiteSpace(email))
-            throw new DomainException("Email is required.");
-
         if (dateOfBirth.Date >= DateTime.UtcNow.Date)
             throw new DomainException("Date of birth must be in the past.");
 
         UserId = userId;
         FirstName = firstName.Trim();
         LastName = lastName.Trim();
-        Email = email.Trim().ToLowerInvariant();
         DateOfBirth = dateOfBirth.Date;
     }
 
     public void UpdateDetails(
         string firstName,
-        string lastName,
-        string email)
+        string lastName)
     {
         if (string.IsNullOrWhiteSpace(firstName))
             throw new DomainException("First name is required.");
@@ -58,12 +50,8 @@ public class Customer : BaseEntity
         if (string.IsNullOrWhiteSpace(lastName))
             throw new DomainException("Last name is required.");
 
-        if (string.IsNullOrWhiteSpace(email))
-            throw new DomainException("Email is required.");
-
         FirstName = firstName.Trim();
         LastName = lastName.Trim();
-        Email = email.Trim().ToLowerInvariant();
 
         MarkAsUpdated();
     }

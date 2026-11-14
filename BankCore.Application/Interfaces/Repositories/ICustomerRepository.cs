@@ -6,8 +6,7 @@ public interface ICustomerRepository
     Task<Customer?> GetByIdAsync(int id);
 
     Task<Customer?> GetByEmailAsync(string email);
-
-    Task<bool> ExistsByEmailAsync(string email);
+    Task<Customer?> GetByUserIdAsync(int userId);
 
     Task AddAsync(Customer customer);
 }

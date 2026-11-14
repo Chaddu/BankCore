@@ -5,12 +5,11 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace BankCore.API.Controllers;
 
-[ApiController]
-[Route("api/[controller]")]
 [Authorize]
 public class CustomerController(ICustomerService customerService) : BaseController
 {
     [HttpGet("{id:int}")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> GetById(int id)
     {
         var result = await customerService.GetByIdAsync(id);
@@ -18,6 +17,7 @@ public class CustomerController(ICustomerService customerService) : BaseControll
     }
 
     [HttpGet("email/{email}")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> GetByEmail(string email)
     {
         var result = await customerService.GetByEmailAsync(email);
@@ -29,6 +29,12 @@ public class CustomerController(ICustomerService customerService) : BaseControll
     {
         var result = await customerService.UpdateAsync(GetUserId(), request);
 
+        return HandleResult(result);
+    }
+    [HttpGet("my-profile")]
+    public async Task<IActionResult> GetMyProfile()
+    {
+        var result = await customerService.GetMyProfileAsync(GetUserId());
         return HandleResult(result);
     }
 }

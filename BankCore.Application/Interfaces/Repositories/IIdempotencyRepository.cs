@@ -7,4 +7,5 @@ public interface IIdempotencyRepository
     Task<IdempotencyRecord?> GetByKeyAsync(string key);
 
     Task AddAsync(IdempotencyRecord record);
+    Task DeleteAsync(IdempotencyRecord record);
 }

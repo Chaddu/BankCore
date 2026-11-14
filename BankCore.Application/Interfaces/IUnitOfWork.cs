@@ -13,6 +13,8 @@ public interface IUnitOfWork
 
     IIdempotencyRepository IdempotencyRecords { get; }
     IUserRepository Users { get; }
+    INotificationRepository Notifications { get; }
+    IOutboxRepository OutboxMessages { get; }
 
     Task<int> SaveChangesAsync();
 

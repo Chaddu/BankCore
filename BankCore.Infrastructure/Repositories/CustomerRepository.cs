@@ -12,22 +12,25 @@ public class CustomerRepository(AppDbContext context) : ICustomerRepository
         await context.Customers.AddAsync(customer);
     }
 
-    public async Task<bool> ExistsByEmailAsync(string email)
-    {
-        email = email.Trim().ToLowerInvariant();
-
-        return await context.Customers.AnyAsync(c => c.Email == email);
-    }
-
     public async Task<Customer?> GetByEmailAsync(string email)
     {
         email = email.Trim().ToLowerInvariant();
 
-        return await context.Customers.FirstOrDefaultAsync(c => c.Email == email);
+        return await context.Customers
+            .Include(c => c.User)
+            .FirstOrDefaultAsync(c => c.User.Email == email);
     }
 
     public async Task<Customer?> GetByIdAsync(int id)
     {
-        return await context.Customers.FirstOrDefaultAsync(c => c.Id == id);
+        return await context.Customers
+            .Include(c => c.User)
+            .FirstOrDefaultAsync(c => c.Id == id);
+    }
+    public async Task<Customer?> GetByUserIdAsync(int userId)
+    {
+        return await context.Customers
+            .Include(c => c.User)
+            .FirstOrDefaultAsync(c => c.UserId == userId);
     }
 }

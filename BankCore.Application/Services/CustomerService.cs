@@ -35,26 +35,18 @@ public class CustomerService(IUnitOfWork unitOfWork, IMapper mapper) : ICustomer
         return Result<CustomerResponse>.Success(response);
     }
 
-    public async Task<Result<CustomerResponse>> UpdateAsync(int id, UpdateCustomerRequest request)
+    public async Task<Result<CustomerResponse>> UpdateAsync(int currentUserId, UpdateCustomerRequest request)
     {
-        var customer = await unitOfWork.Customers.GetByIdAsync(id);
+        var customer = await unitOfWork.Customers.GetByUserIdAsync(currentUserId);
 
         if (customer is null)
             return Result<CustomerResponse>.Failure("Customer not found", ErrorType.NotFound);
-
-        var email = request.Email.Trim().ToLowerInvariant();
-
-        var existingCustomer = await unitOfWork.Customers.GetByEmailAsync(email);
-
-        if (existingCustomer is not null && existingCustomer.Id != id)
-            return Result<CustomerResponse>.Failure("A customer with this email already exists.",ErrorType.Conflict);
 
         try
         {
             customer.UpdateDetails(
                 request.FirstName,
-                request.LastName,
-                email);
+                request.LastName);
 
             await unitOfWork.SaveChangesAsync();
 
@@ -65,5 +57,14 @@ public class CustomerService(IUnitOfWork unitOfWork, IMapper mapper) : ICustomer
         {
             return Result<CustomerResponse>.Failure(ex.Message,ErrorType.Validation);
         }
+    }
+    public async Task<Result<CustomerResponse>> GetMyProfileAsync(int currentUserId)
+    {
+        var customer = await unitOfWork.Customers.GetByUserIdAsync(currentUserId);
+
+        if (customer is null)
+            return Result<CustomerResponse>.Failure("Customer not found.",ErrorType.NotFound);
+
+        return Result<CustomerResponse>.Success(mapper.Map<CustomerResponse>(customer));
     }
 }

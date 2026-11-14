@@ -12,6 +12,7 @@ public class BankAccount : BaseEntity
     public decimal Balance { get; private set; }
 
     public string Currency { get; private set; } = string.Empty;
+    public byte[] RowVersion { get; private set; } = [];
 
     public AccountStatus Status { get; private set; }
 

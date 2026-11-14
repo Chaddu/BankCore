@@ -5,7 +5,7 @@ using BankCore.Application.DTOs.Responses;
 namespace BankCore.Application.Interfaces.Services;
 public interface ILedgerEntryService
 {
-    Task<Result<LedgerEntryResponse>> GetByIdAsync(int id);
+    Task<Result<LedgerEntryResponse>> GetByIdAsync(int id, int currentUserId);
 
-    Task<Result<PagedResponse<LedgerEntryResponse>>> GetByAccountIdAsync(int accountId,PaginationRequest request);
+    Task<Result<PagedResponse<LedgerEntryResponse>>> GetByAccountIdAsync(int accountId,PaginationRequest request, int currentUserId);
 }

@@ -10,5 +10,6 @@ public interface ICustomerService
 
     Task<Result<CustomerResponse>> GetByEmailAsync(string email);
 
-    Task<Result<CustomerResponse>> UpdateAsync(int id,UpdateCustomerRequest request);
+    Task<Result<CustomerResponse>> UpdateAsync(int currentUserId,UpdateCustomerRequest request);
+    Task<Result<CustomerResponse>> GetMyProfileAsync(int currentUserId);
 }

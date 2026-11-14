@@ -44,6 +44,9 @@ public class BankAccountConfiguration : IEntityTypeConfiguration<BankAccount>
             .WithMany()
             .HasForeignKey(a => a.OwnerId)
             .OnDelete(DeleteBehavior.Restrict);
+
+        builder.Property(account => account.RowVersion)
+            .IsRowVersion();
     }
 }
 

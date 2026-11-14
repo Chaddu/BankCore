@@ -9,11 +9,16 @@ namespace BankCore.Application.Services;
 
 public class LedgerEntryService(IUnitOfWork unitOfWork, IMapper mapper) : ILedgerEntryService
 {
-    public async Task<Result<PagedResponse<LedgerEntryResponse>>> GetByAccountIdAsync(int accountId, PaginationRequest request)
+    public async Task<Result<PagedResponse<LedgerEntryResponse>>> GetByAccountIdAsync(int accountId, PaginationRequest request, int currentUserId)
     {
+        var customer = await unitOfWork.Customers.GetByUserIdAsync(currentUserId);
+
+        if (customer is null)
+            return Result<PagedResponse<LedgerEntryResponse>>.Failure("Customer not found.", ErrorType.NotFound);
+
         var account = await unitOfWork.BankAccounts.GetByIdAsync(accountId);
 
-        if(account is null)
+        if(account is null || account.OwnerId != customer.Id)
             return Result<PagedResponse<LedgerEntryResponse>>.Failure("Bank account not found.", ErrorType.NotFound);
 
         var pagination = PaginationHelper.Validate(request);
@@ -32,11 +37,21 @@ public class LedgerEntryService(IUnitOfWork unitOfWork, IMapper mapper) : ILedge
         return Result<PagedResponse<LedgerEntryResponse>>.Success(response);
     }
 
-    public async Task<Result<LedgerEntryResponse>> GetByIdAsync(int id)
+    public async Task<Result<LedgerEntryResponse>> GetByIdAsync(int id, int currentUserId)
     {
+        var customer = await unitOfWork.Customers.GetByUserIdAsync(currentUserId);
+
+        if (customer is null)
+            return Result<LedgerEntryResponse>.Failure("Customer not found.", ErrorType.NotFound);
+
         var ledgeEntry = await unitOfWork.LedgerEntries.GetByIdAsync(id);
         
         if (ledgeEntry is null)
+            return Result<LedgerEntryResponse>.Failure("Ledger entry not found.", ErrorType.NotFound);
+
+        var account = await unitOfWork.BankAccounts.GetByIdAsync(ledgeEntry.BankAccountId);
+
+        if (account is null || account.OwnerId != customer.Id)
             return Result<LedgerEntryResponse>.Failure("Ledger entry not found.", ErrorType.NotFound);
 
         return Result<LedgerEntryResponse>.Success(mapper.Map<LedgerEntryResponse>(ledgeEntry));

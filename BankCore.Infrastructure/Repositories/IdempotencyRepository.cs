@@ -16,4 +16,9 @@ public class IdempotencyRepository(AppDbContext context) : IIdempotencyRepositor
     {
         await context.IdempotencyRecords.AddAsync(record);
     }
+    public Task DeleteAsync(IdempotencyRecord record)
+    {
+        context.IdempotencyRecords.Remove(record);
+        return Task.CompletedTask;
+    }
 }

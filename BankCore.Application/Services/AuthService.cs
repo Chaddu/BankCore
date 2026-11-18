@@ -13,22 +13,20 @@ public class AuthService(IUnitOfWork unitOfWork, IPasswordService passwordServic
 {
     public async Task<Result<AuthResponse>> LoginAsync(LoginRequest request)
     {
-        var email = request.Email.Trim().ToLowerInvariant();
+        var email = request.Email?.Trim().ToLowerInvariant() ?? string.Empty;
+        var password = request.Password ?? string.Empty;
 
         var user = await unitOfWork.Users.GetByEmailAsync(email);
 
-        if(user is null)
+        var isPasswordValid = passwordService.VerifyPassword(user, password);
+
+        if (user is null || !isPasswordValid)
             return Result<AuthResponse>.Failure("Invalid email or password.",ErrorType.Unauthorized);
 
-        var isPasswordValid = passwordService.VerifyPassword(user, request.Password);
-
-        if(!isPasswordValid)
-            return Result<AuthResponse>.Failure("Invalid email or password.", ErrorType.Unauthorized);
-
         var (token, expiresAt) = jwtService.GenerateToken(
-       user.Id,
-       user.Email,
-       user.Role.ToString());
+            user.Id,
+            user.Email,
+            user.Role.ToString());
 
         return Result<AuthResponse>.Success(new AuthResponse(token, expiresAt));
     }

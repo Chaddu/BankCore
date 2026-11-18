@@ -7,15 +7,16 @@ namespace BankCore.Infrastructure.Repositories;
 
 public class IdempotencyRepository(AppDbContext context) : IIdempotencyRepository
 {
-    public async Task<IdempotencyRecord?> GetByKeyAsync(string key)
+    public async Task<IdempotencyRecord?> GetByKeyAsync(int customerId,string key)
     {
-        return await context.IdempotencyRecords.FirstOrDefaultAsync(i => i.Key == key);
+        return await context.IdempotencyRecords.FirstOrDefaultAsync(i => i.CustomerId == customerId && i.Key == key);
     }
 
     public async Task AddAsync(IdempotencyRecord record)
     {
         await context.IdempotencyRecords.AddAsync(record);
     }
+
     public Task DeleteAsync(IdempotencyRecord record)
     {
         context.IdempotencyRecords.Remove(record);

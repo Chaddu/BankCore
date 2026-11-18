@@ -19,23 +19,26 @@ using System.Text.Json;
 
 namespace BankCore.Application.Services;
 
-public class TransferService(IUnitOfWork unitOfWork, IMapper mapper) : ITransferService
-{
-    public async Task<Result<TransferResponse>> CreateAsync(CreateTransferRequest request, string idempotencyKey, int currentUserId)
+    public class TransferService(IUnitOfWork unitOfWork, IMapper mapper) : ITransferService
     {
+        public async Task<Result<TransferResponse>> CreateAsync(CreateTransferRequest request, string idempotencyKey, int currentUserId)
+        {
         if (string.IsNullOrWhiteSpace(idempotencyKey))
-            return Result<TransferResponse>.Failure("Idempotency key is required.", ErrorType.Validation);
+            return Result<TransferResponse>.Failure("Idempotency key is required.",ErrorType.Validation);
 
         idempotencyKey = idempotencyKey.Trim();
+
+        if (idempotencyKey.Length > 128)
+            return Result<TransferResponse>.Failure("Idempotency key cannot exceed 128 characters.",ErrorType.Validation);
 
         var customer = await unitOfWork.Customers.GetByUserIdAsync(currentUserId);
 
         if (customer is null)
-            return Result<TransferResponse>.Failure("Customer not found.", ErrorType.NotFound);
+            return Result<TransferResponse>.Failure("Customer not found.",ErrorType.NotFound);
 
         var requestHash = GenerateRequestHash(request);
 
-        var existingRecord = await unitOfWork.IdempotencyRecords.GetByKeyAsync(idempotencyKey);
+        var existingRecord = await unitOfWork.IdempotencyRecords.GetByKeyAsync(customer.Id, idempotencyKey);
 
         if (existingRecord is not null && existingRecord.ExpiresAt <= DateTime.UtcNow)
         {
@@ -48,44 +51,41 @@ public class TransferService(IUnitOfWork unitOfWork, IMapper mapper) : ITransfer
         if (existingRecord is not null)
         {
             if (existingRecord.RequestHash != requestHash)
-            {
-                return Result<TransferResponse>.Failure("This idempotency key was already used for a different request.", ErrorType.Conflict);
-            }
+                return Result<TransferResponse>.Failure("This idempotency key was already used for a different request.",ErrorType.Conflict);
 
             var existingTransfer = await unitOfWork.Transfers.GetByTransactionIdAsync(existingRecord.TransactionId);
 
             if (existingTransfer is null)
-                return Result<TransferResponse>.Failure("The previous transfer record could not be found.", ErrorType.Failure);
+                return Result<TransferResponse>.Failure("The previous transfer record could not be found.",ErrorType.Failure);
 
             var existingSourceAccount = await unitOfWork.BankAccounts.GetByIdAsync(existingTransfer.FromAccountId);
 
             if (existingSourceAccount is null || existingSourceAccount.OwnerId != customer.Id)
-                return Result<TransferResponse>.Failure("Transfer not found.", ErrorType.NotFound);
+                return Result<TransferResponse>.Failure("Transfer not found.",ErrorType.NotFound);
 
             return Result<TransferResponse>.Success(mapper.Map<TransferResponse>(existingTransfer));
         }
 
         var fromAccount = await unitOfWork.BankAccounts.GetByIdAsync(request.FromAccountId);
 
-        if (fromAccount is null)
+        if (fromAccount is null || fromAccount.OwnerId != customer.Id)
             return Result<TransferResponse>.Failure("Source account not found.", ErrorType.NotFound);
 
-        if (fromAccount.OwnerId != customer.Id)
-            return Result<TransferResponse>.Failure(
-                "You are not allowed to transfer from this account.",
-                ErrorType.Forbidden);
+        if (request.FromAccountId == request.ToAccountId)
+            return Result<TransferResponse>.Failure("Source and destination accounts must be different.",ErrorType.Validation);
 
         var toAccount = await unitOfWork.BankAccounts.GetByIdAsync(request.ToAccountId);
 
         if (toAccount is null)
-            return Result<TransferResponse>.Failure("Destination account not found.", ErrorType.NotFound);
+            return Result<TransferResponse>.Failure("Transfer could not be completed.",ErrorType.Validation);
 
         try
         {
             var currency = request.Currency?.Trim().ToUpperInvariant();
 
-            if (fromAccount.Currency != toAccount.Currency || fromAccount.Currency != currency)
-                return Result<TransferResponse>.Failure("Both accounts and the request must use the same currency.", ErrorType.Validation);
+            if (fromAccount.Currency != toAccount.Currency ||
+                fromAccount.Currency != currency)
+                return Result<TransferResponse>.Failure("Transfer could not be completed.",ErrorType.Validation);
 
             var transfer = new Transfer(
                 request.FromAccountId,
@@ -118,6 +118,7 @@ public class TransferService(IUnitOfWork unitOfWork, IMapper mapper) : ITransfer
             transfer.Complete();
 
             var idempotencyRecord = new IdempotencyRecord(
+                customer.Id,
                 idempotencyKey,
                 requestHash,
                 transactionId,
@@ -136,32 +137,37 @@ public class TransferService(IUnitOfWork unitOfWork, IMapper mapper) : ITransfer
                 transfer.Currency,
                 DateTime.UtcNow);
 
-            var outboxMessage = new OutboxMessage(nameof(TransferCompletedEvent),JsonSerializer.Serialize(transferEvent));
+            var outboxMessage = new OutboxMessage(
+                nameof(TransferCompletedEvent),
+                JsonSerializer.Serialize(transferEvent));
 
             await unitOfWork.OutboxMessages.AddAsync(outboxMessage);
 
             await unitOfWork.SaveChangesAsync();
             await unitOfWork.CommitTransactionAsync();
 
-            return Result<TransferResponse>.Success(mapper.Map<TransferResponse>(transfer));
+            return Result<TransferResponse>.Success(
+                mapper.Map<TransferResponse>(transfer));
         }
         catch (DbUpdateConcurrencyException)
         {
             await unitOfWork.RollbackTransactionAsync();
 
-            return Result<TransferResponse>.Failure("The account balance was modified by another transaction. Please try again.", ErrorType.Conflict);
+            return Result<TransferResponse>.Failure("The account balance was modified by another transaction. Please try again.",ErrorType.Conflict);
         }
         catch (DomainException ex)
         {
             await unitOfWork.RollbackTransactionAsync();
 
-            return Result<TransferResponse>.Failure(ex.Message, ErrorType.Validation);
+            return Result<TransferResponse>.Failure(ex.Message,ErrorType.Validation);
         }
-        catch (DbUpdateException ex) when (ex.InnerException is SqlException sqlException && (sqlException.Number == 2601 || sqlException.Number == 2627))
+        catch (DbUpdateException ex) when (
+            ex.InnerException is SqlException sqlException &&
+            (sqlException.Number == 2601 || sqlException.Number == 2627))
         {
             await unitOfWork.RollbackTransactionAsync();
 
-            return Result<TransferResponse>.Failure("This transfer request has already been processed. Please retry using the same idempotency key.", ErrorType.Conflict);
+            return Result<TransferResponse>.Failure("This transfer request has already been processed. Please retry using the same idempotency key.",ErrorType.Conflict);
         }
         catch
         {
@@ -207,7 +213,7 @@ public class TransferService(IUnitOfWork unitOfWork, IMapper mapper) : ITransfer
             "|",
             request.FromAccountId.ToString(CultureInfo.InvariantCulture),
             request.ToAccountId.ToString(CultureInfo.InvariantCulture),
-            request.Amount.ToString(CultureInfo.InvariantCulture),
+            request.Amount.ToString("F2", CultureInfo.InvariantCulture),
             request.Currency?.Trim().ToUpperInvariant() ?? string.Empty,
             request.Description?.Trim() ?? string.Empty);
 

@@ -3,23 +3,19 @@ using BankCore.Domain.Exceptions;
 using BankCore.Domain.Helpers;
 
 namespace BankCore.Domain.Entities;
+
 public class BankAccount : BaseEntity
 {
+
     public string AccountNumber { get; private set; } = string.Empty;
-
     public int OwnerId { get; private set; }
-
     public decimal Balance { get; private set; }
-
     public string Currency { get; private set; } = string.Empty;
     public byte[] RowVersion { get; private set; } = [];
-
     public AccountStatus Status { get; private set; }
-
 
     private BankAccount()
     {
-        
     }
 
     public BankAccount(int ownerId, string accountNumber, string currency)
@@ -40,20 +36,21 @@ public class BankAccount : BaseEntity
     public void Deposit(decimal amount)
     {
         EnsureActive();
-        if(amount <=0)
-            throw new DomainException("Deposit amount must be positive.");
+        TransactionAmountValidator.Validate(amount);
+
+        if (Balance + amount > 99999999999999999.99m)
+            throw new DomainException("Account balance exceeds the maximum allowed.");
 
         Balance += amount;
         MarkAsUpdated();
     }
+
     public void Withdraw(decimal amount)
     {
         EnsureActive();
+        TransactionAmountValidator.Validate(amount);
 
-        if(amount <= 0)
-            throw new DomainException("Withdrawal amount must be positive.");
-
-        if(amount > Balance)
+        if (amount > Balance)
             throw new DomainException("Insufficient funds.");
 
         Balance -= amount;
@@ -83,16 +80,17 @@ public class BankAccount : BaseEntity
 
     public void Reactivate()
     {
-        if(Status != AccountStatus.Frozen)
+        if (Status != AccountStatus.Frozen)
             throw new DomainException("Only frozen accounts can be reactivated.");
 
         Status = AccountStatus.Active;
         MarkAsUpdated();
     }
 
+
     private void EnsureActive()
     {
-        if(Status != AccountStatus.Active)
+        if (Status != AccountStatus.Active)
             throw new DomainException("Account is not active.");
     }
 }

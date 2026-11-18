@@ -4,6 +4,8 @@ namespace BankCore.Domain.Entities;
 
 public class IdempotencyRecord : BaseEntity
 {
+    public int CustomerId { get; private set; }
+
     public string Key { get; private set; } = string.Empty;
 
     public string RequestHash { get; private set; } = string.Empty;
@@ -17,13 +19,22 @@ public class IdempotencyRecord : BaseEntity
     }
 
     public IdempotencyRecord(
+        int customerId,
         string key,
         string requestHash,
         Guid transactionId,
         DateTime expiresAt)
     {
+        if (customerId <= 0)
+            throw new DomainException("Customer ID must be positive.");
+
         if (string.IsNullOrWhiteSpace(key))
             throw new DomainException("Idempotency key is required.");
+
+        key = key.Trim();
+
+        if (key.Length > 128)
+            throw new DomainException("Idempotency key cannot exceed 128 characters.");
 
         if (string.IsNullOrWhiteSpace(requestHash))
             throw new DomainException("Request hash is required.");
@@ -34,7 +45,8 @@ public class IdempotencyRecord : BaseEntity
         if (expiresAt <= DateTime.UtcNow)
             throw new DomainException("Expiration time must be in the future.");
 
-        Key = key.Trim();
+        CustomerId = customerId;
+        Key = key;
         RequestHash = requestHash;
         TransactionId = transactionId;
         ExpiresAt = expiresAt;

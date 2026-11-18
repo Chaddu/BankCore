@@ -14,7 +14,7 @@ public class LedgerEntryConfiguration : IEntityTypeConfiguration<LedgerEntry>
             .IsRequired();
 
         builder.Property(l => l.Amount)
-            .HasPrecision(19, 4)
+            .HasPrecision(19, 2)
             .IsRequired();
 
         builder.Property(l => l.Type)

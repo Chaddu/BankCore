@@ -17,7 +17,7 @@ public class TransferConfiguration : IEntityTypeConfiguration<Transfer>
             .IsRequired();
 
         builder.Property(t => t.Amount)
-            .HasPrecision(19, 4)
+            .HasPrecision(19, 2)
             .IsRequired();
 
         builder.Property(t => t.Currency)

@@ -39,9 +39,8 @@ public class Transfer : BaseEntity
         if (fromAccountId == toAccountId)
             throw new DomainException("Source and destination accounts must be different.");
 
-        if (amount <= 0)
-            throw new DomainException("Transfer amount must be positive.");
-            
+        TransactionAmountValidator.Validate(amount);
+
         FromAccountId = fromAccountId;
         ToAccountId = toAccountId;
         Amount = amount;

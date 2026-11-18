@@ -21,7 +21,7 @@ public class BankAccountConfiguration : IEntityTypeConfiguration<BankAccount>
             .IsRequired();
 
         builder.Property(a => a.Balance)
-            .HasPrecision(19, 4)
+            .HasPrecision(19, 2)
             .IsRequired();
 
         builder.Property(a => a.Currency)

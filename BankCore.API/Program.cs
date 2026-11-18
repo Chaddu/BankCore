@@ -1,10 +1,13 @@
+using BankCore.API.HealthChecks;
 using BankCore.API.Middleware;
 using BankCore.Application.Common;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.OpenApi;
 using BankCore.Infrastructure;
-using System.Security.Claims;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi;
+using System.Security.Claims;
+using System.Threading.RateLimiting;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -88,6 +91,47 @@ builder.Services
 
 builder.Services.AddAuthorization();
 
+
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+
+    options.AddPolicy("AuthPolicy", context =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: context.Connection.RemoteIpAddress?.ToString()
+                ?? "unknown",
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 5,
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0,
+                AutoReplenishment = true
+            }));
+
+    options.OnRejected = async(context, cancellationToken) =>
+    {
+        context.HttpContext.Response.ContentType = "application/json";
+       
+        await context.HttpContext.Response.WriteAsJsonAsync(
+            new
+            {
+                StatusCode = context.HttpContext.Response.StatusCode,
+                Message = "Too many requests. Please try again later.",
+                TraceId = context.HttpContext.TraceIdentifier
+            },
+            cancellationToken);
+    };
+});
+
+builder.Services
+    .AddHealthChecks()
+    .AddCheck<DatabaseHealthCheck>(
+        "sql-server",
+        tags: ["ready"])
+    .AddCheck<RabbitMqHealthCheck>(
+        "rabbitmq",
+        tags: ["ready"]);
+
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
@@ -96,14 +140,38 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-// Global exception handling
+app.UseRouting();
+
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 
 app.UseHttpsRedirection();
+
+app.UseRateLimiter();
 
 app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+
+app.MapHealthChecks("/health", new HealthCheckOptions
+{
+    ResponseWriter = async (context, report) =>
+    {
+        context.Response.ContentType = "application/json";
+
+        var response = new
+        {
+            Status = report.Status.ToString(),
+            Checks = report.Entries.Select(entry => new
+            {
+                Name = entry.Key,
+                Status = entry.Value.Status.ToString(),
+                Description = entry.Value.Description
+            })
+        };
+
+        await context.Response.WriteAsJsonAsync(response);
+    }
+});
 
 app.Run();

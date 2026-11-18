@@ -2,9 +2,11 @@
 using BankCore.Application.Interfaces.Services;
 using BankCore.Application.Services;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace BankCore.API.Controllers;
 
+[EnableRateLimiting("AuthPolicy")]
 [ApiController]
 public class AuthController(IAuthService authService) : BaseController
 {

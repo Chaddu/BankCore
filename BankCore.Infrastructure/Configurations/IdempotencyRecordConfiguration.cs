@@ -10,11 +10,14 @@ public class IdempotencyRecordConfiguration : IEntityTypeConfiguration<Idempoten
     {
         builder.HasKey(i => i.Id);
 
+        builder.Property(i => i.CustomerId)
+            .IsRequired();
+
         builder.Property(i => i.Key)
             .IsRequired()
             .HasMaxLength(128);
 
-        builder.HasIndex(i => i.Key)
+        builder.HasIndex(i => new { i.CustomerId, i.Key })
             .IsUnique();
 
         builder.Property(i => i.RequestHash)
@@ -29,5 +32,10 @@ public class IdempotencyRecordConfiguration : IEntityTypeConfiguration<Idempoten
 
         builder.Property(i => i.CreatedAt)
             .IsRequired();
+
+        builder.HasOne<Customer>()
+            .WithMany()
+            .HasForeignKey(i => i.CustomerId)
+            .OnDelete(DeleteBehavior.Restrict);
     }
 }
